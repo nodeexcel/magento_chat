@@ -15,7 +15,9 @@ var connection = mysql.createConnection({
 
 
 io.on('connection', socket => {
+    console.log("connected")
     socket.on('chat', data => {
+        console.log(data, "chatchatchatchatchat")
         let sender_id = data.sender_id
         let recipient_id = data.recipient_id
         let identifier = data.identifier;
@@ -40,7 +42,7 @@ io.on('connection', socket => {
     });
 
     socket.on('chat_list', data => {
-        console.log(data)
+        console.log(data, 'chat_listchat_listchat_listchat_list')
         let recipient_id = data.user_id;
         connection.connect();
         connection.query(`select DISTINCT sender_id, identifier from message_chat where recipient_id=? ORDER BY message_time DESC`, [recipient_id], function(err, data) {
