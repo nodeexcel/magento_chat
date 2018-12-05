@@ -13,7 +13,7 @@ var Chat = require('./models/Chat');
 var rooms = []
 
 var mysql = require('mysql');
-var connection = mysql.createConnection({
+var pool = mysql.createPool({
     host: 'localhost',
     user: 'root',
     password: '123',
@@ -51,30 +51,31 @@ io.on('connection', socket => {
             }
         }
         let message_data = { sender_id: sender_id, recipient_id: recipient_id, identifier: identifier, message_body: data.message_body, message_time: new Date() }
-        connection.connect();
-        let query = connection.query(`INSERT into message_chat SET ?`, message_data, function(err, data) {
-            connection.query(`select DISTINCT sender_id, identifier from message_chat where recipient_id= ?`, [recipient_id], function(err, data) {
-                socket.emit('chat_list', data)
-                socket.emit('chat', message_data);
+        pool.getConnection(function(err, connection) {
+            let query = connection.query(`INSERT into message_chat SET ?`, message_data, function(err, data) {
+                connection.query(`select DISTINCT sender_id, identifier from message_chat where recipient_id= ?`, [recipient_id], function(err, data) {
+                    // socket.emit('chat_list', data)
+                    io.sockets.emit('chat', message_data);
+                })
+                connection.release()
+                // socket.emit('chat_list', data)
             })
-            connection.end();
-            // socket.emit('chat_list', data)
         })
-        console.log(query.sql)
     });
 
     socket.on('chat_list', data => {
         console.log(data, 'chat_listchat_listchat_listchat_list')
         let recipient_id = data.user_id;
-        connection.connect();
-        connection.query(`select DISTINCT sender_id, identifier from message_chat where recipient_id=? ORDER BY message_time DESC`, [recipient_id], function(err, data) {
-            socket.emit('chat_list', data)
+        pool.getConnection(function(err, connection) {
+            connection.query(`select DISTINCT sender_id, identifier from message_chat where recipient_id=? ORDER BY message_time DESC`, [recipient_id], function(err, data) {
+                io.sockets.emit('chat_list', data)
+            })
+            connection.release();
         })
-        connection.end();
     })
 
     socket.on('typing', data => {
-        socket.broadcast.emit('typing', data); // return data
+        socket.emit('typing', data); // return data
     });
 });
 
