@@ -3,6 +3,13 @@ var app = express();
 var http = require('http').Server(app);
 var io = require('socket.io')(http);
 
+// require('./libs/db-connection');
+
+app.use('/public', express.static('public'));
+app.set('view engine', 'ejs');
+
+var Chat = require('./models/Chat');
+
 var rooms = []
 
 var mysql = require('mysql');
@@ -13,11 +20,26 @@ var connection = mysql.createConnection({
     database: 'usersDb'
 });
 
+// console.log(app)
+app.get('/', (req, res) => {
+    let data = { user1: "Saurabh", user2: "prashant" }
+    let channel_name = data.user1 + "_" + data.user2;
+    let users = { user_1: data.user1, user_2: data.user2 }
+    let channel = rooms.filter(function(data) { return data.channel_name == channel_name })[0]
+    let channel_data = { channel_name: channel_name, messages: [], users: users }
+    if (!channel) {
+        rooms.push(channel_data)
+        res.render('index', { data: channel_data })
+    } else {
+        res.render('index', { data: channel })
+    }
+});
+
 
 io.on('connection', socket => {
-    console.log("connected")
+    console.log('connected')
     socket.on('chat', data => {
-        console.log(data, "chatchatchatchatchat")
+        console.log(data)
         let sender_id = data.sender_id
         let recipient_id = data.recipient_id
         let identifier = data.identifier;
