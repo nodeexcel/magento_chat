@@ -14,7 +14,7 @@ var rooms = []
 
 var mysql = require('mysql');
 var pool = mysql.createPool({
-    host: '195.201.86.124',
+    host: 'localhost',
     user: 'root',
     password: 'java@123',
     database: 'bumbag_dev'
