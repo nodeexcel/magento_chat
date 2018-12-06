@@ -14,7 +14,7 @@ var rooms = []
 
 var mysql = require('mysql');
 var pool = mysql.createPool({
-    host: 'localhost',
+    host: '195.201.86.124',
     user: 'root',
     password: 'java@123',
     database: 'bumbag_dev'
@@ -52,10 +52,12 @@ io.on('connection', socket => {
         }
         let message_data = { sender_id: sender_id, recipient_id: recipient_id, identifier: identifier, message_body: data.message_body, message_time: new Date() }
         pool.getConnection(function(err, connection) {
-            let query = connection.query(`INSERT into message_chat SET ?`, message_data, function(err, data) {
+            console.log(err)
+            connection.query(`INSERT into message_chat SET ?`, message_data, function(err, data) {
                 connection.query(`select DISTINCT sender_id, identifier from message_chat where recipient_id= ?`, [recipient_id], async function(err, data) {
                     // socket.emit('chat_list', data)
                     connection.query(`SELECT A.logo,C.firstname, C.lastname FROM 'account_edit_customer_attribute' as A INNER JOIN 'customer_entity' as C ON A.customer_id = C.entity_id WHERE C.entity_id = ${sender_id}`, function(err, sender_data){
+                        console.log(sender_data)
                         message_data['sender_name'] = sender_data.length ? sender_data[0].firstname + " " +sender_data[0].lastname: "";
                         message_data['sender_img']  = sender_data.length ? sender_data[0].logo : 'default_profile_image.png';
                         connection.query(`SELECT A.logo,C.firstname, C.lastname FROM 'account_edit_customer_attribute' as A INNER JOIN 'customer_entity' as C ON A.customer_id = C.entity_id WHERE C.entity_id = ${recipient_id}`, function(err, recipient_data){
@@ -63,7 +65,7 @@ io.on('connection', socket => {
                             message_data['recipient_img']  = recipient_data.length ? recipient_data[0].logo : 'default_profile_image.png';
                             io.sockets.emit('chat', message_data);
                         })
-                        connection.release()
+                        // connection.release()
                     })
                 })
                 // socket.emit('chat_list', data)
