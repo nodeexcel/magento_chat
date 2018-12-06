@@ -56,6 +56,8 @@ io.on('connection', socket => {
             connection.query(`INSERT into message_chat SET ?`, message_data, function(err, data) {
                 connection.query(`select DISTINCT sender_id, identifier from message_chat where recipient_id= ?`, [recipient_id], async function(err, data) {
                     // socket.emit('chat_list', data)
+                    console.log(`SELECT A.logo,C.firstname, C.lastname FROM 'account_edit_customer_attribute' as A INNER JOIN 'customer_entity' as C ON A.customer_id = C.entity_id WHERE C.entity_id = ${sender_id}`)
+                    console.log(`SELECT A.logo,C.firstname, C.lastname FROM 'account_edit_customer_attribute' as A INNER JOIN 'customer_entity' as C ON A.customer_id = C.entity_id WHERE C.entity_id = ${recipient_id}`)
                     connection.query(`SELECT A.logo,C.firstname, C.lastname FROM 'account_edit_customer_attribute' as A INNER JOIN 'customer_entity' as C ON A.customer_id = C.entity_id WHERE C.entity_id = ${sender_id}`, function(err, sender_data){
                         console.log(sender_data)
                         message_data['sender_name'] = sender_data.length ? sender_data[0].firstname + " " +sender_data[0].lastname: "";
