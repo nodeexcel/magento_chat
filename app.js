@@ -39,9 +39,9 @@ app.get('/', (req, res) => {
 io.on('connection', socket => {
     console.log('connected')
     socket.on('chat', data => {
-        console.log(data)
-        let sender_id = data.sender_id
-        let recipient_id = data.recipient_id
+        console.log(data) 
+        let sender_id = parseInt(data.sender_id)
+        let recipient_id = parseInt(data.recipient_id)
         let identifier = data.identifier;
         if (!identifier) {
             if (sender_id < recipient_id) {
