@@ -90,7 +90,7 @@ io.on('connection', socket => {
     socket.on('unread', data => {
         console.log(data, "=====================")
         pool.getConnection(function(err, connection) {
-            connection.query(`UPDATE message_chat SET unread=0 WHERE recipient_id = ${data.recipient_id} AND identifier=${data.identifier}`, function(err, response) {
+            connection.query(`UPDATE message_chat SET unread=0 WHERE recipient_id = ${parseInt(data.recipient_id)} AND identifier=${data.identifier}`, function(err, response) {
                 console.log(response, "00000000000000000000")
                 io.sockets.emit('unread', false)
             })
