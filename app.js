@@ -39,7 +39,7 @@ app.get('/', (req, res) => {
 io.on('connection', socket => {
     console.log('connected')
     socket.on('chat', data => {
-        console.log(data) 
+        console.log(data)
         let sender_id = parseInt(data.sender_id)
         let recipient_id = parseInt(data.recipient_id)
         let identifier = data.identifier;
@@ -50,7 +50,7 @@ io.on('connection', socket => {
                 identifier = `user_${recipient_id}:user_${sender_id}`
             }
         }
-        let message_data = { sender_id: sender_id, recipient_id: recipient_id, identifier: identifier, message_body: data.message_body, message_time: new Date() }
+        let message_data = { sender_id: sender_id, recipient_id: recipient_id, identifier: identifier, message_body: data.message_body, message_time: new Date(), unread: 1 }
         pool.getConnection(function(err, connection) {
             console.log(err)
             connection.query(`INSERT into message_chat SET ?`, message_data, function(err, data) {
@@ -58,13 +58,13 @@ io.on('connection', socket => {
                     // socket.emit('chat_list', data)
                     // console.log(`SELECT A.logo,C.firstname, C.lastname FROM `account_edit_customer_attribute` as A INNER JOIN `customer_entity` as C ON A.customer_id = C.entity_id WHERE C.entity_id = ${sender_id}`)
                     // console.log(`SELECT A.logo,C.firstname, C.lastname FROM `account_edit_customer_attribute` as A INNER JOIN `customer_entity` as C ON A.customer_id = C.entity_id WHERE C.entity_id =${recipient_id}`)
-                    connection.query(`SELECT A.logo,C.firstname, C.lastname FROM account_edit_customer_attribute as A INNER JOIN customer_entity as C ON A.customer_id = C.entity_id WHERE C.entity_id = ${sender_id}`, function(err, sender_data){
+                    connection.query(`SELECT A.logo,C.firstname, C.lastname FROM account_edit_customer_attribute as A INNER JOIN customer_entity as C ON A.customer_id = C.entity_id WHERE C.entity_id = ${sender_id}`, function(err, sender_data) {
                         // console.log(sender_data)
-                        message_data['sender_name'] = sender_data.length ? sender_data[0].firstname + " " +sender_data[0].lastname: "";
-                        message_data['sender_img']  = sender_data.length ? sender_data[0].logo : 'default_profile_image.png';
-                        connection.query(`SELECT A.logo,C.firstname, C.lastname FROM account_edit_customer_attribute as A INNER JOIN customer_entity as C ON A.customer_id = C.entity_id WHERE C.entity_id = ${recipient_id}`, function(err, recipient_data){
-                            message_data['recipient_name'] = recipient_data.length ? recipient_data[0].firstname + " " +recipient_data[0].lastname: "";
-                            message_data['recipient_img']  = recipient_data.length ? recipient_data[0].logo : 'default_profile_image.png';
+                        message_data['sender_name'] = sender_data.length ? sender_data[0].firstname + " " + sender_data[0].lastname : "";
+                        message_data['sender_img'] = sender_data.length ? sender_data[0].logo : 'default_profile_image.png';
+                        connection.query(`SELECT A.logo,C.firstname, C.lastname FROM account_edit_customer_attribute as A INNER JOIN customer_entity as C ON A.customer_id = C.entity_id WHERE C.entity_id = ${recipient_id}`, function(err, recipient_data) {
+                            message_data['recipient_name'] = recipient_data.length ? recipient_data[0].firstname + " " + recipient_data[0].lastname : "";
+                            message_data['recipient_img'] = recipient_data.length ? recipient_data[0].logo : 'default_profile_image.png';
                             console.log(message_data)
                             io.sockets.emit('chat', message_data);
                         })
@@ -84,6 +84,15 @@ io.on('connection', socket => {
                 io.sockets.emit('chat_list', data)
             })
             connection.release();
+        })
+    })
+
+    socket.on('unread', data => {
+        console.log(data, "=====================")
+        pool, getConnection(function(err, connection) {
+            connection.query(`UPDATE 'message_chat' SET 'unread'=0 WHERE 'recipient_id' = ${data.recipient_id} AND 'identifier'=${data.identifier}`, function(err, response) {
+                io.sockets.emit('unread', false)
+            })
         })
     })
 
