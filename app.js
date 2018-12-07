@@ -68,7 +68,7 @@ io.on('connection', socket => {
                             console.log(message_data)
                             io.sockets.emit('chat', message_data);
                         })
-                        // connection.release()
+                        connection.release()
                     })
                 })
                 // socket.emit('chat_list', data)
