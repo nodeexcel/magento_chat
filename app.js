@@ -17,7 +17,7 @@ var pool = mysql.createPool({
     host: 'localhost',
     user: 'root',
     password: 'java@123',
-    database: 'bumbag_dev'
+    database: 'bumbag_staging_21'
 });
 
 // console.log(app)
@@ -55,11 +55,7 @@ io.on('connection', socket => {
             console.log(err)
             connection.query(`INSERT into message_chat SET ?`, message_data, function(err, data) {
                 connection.query(`select DISTINCT sender_id, identifier from message_chat where recipient_id= ?`, [recipient_id], async function(err, data) {
-                    // socket.emit('chat_list', data)
-                    // console.log(`SELECT A.logo,C.firstname, C.lastname FROM `account_edit_customer_attribute` as A INNER JOIN `customer_entity` as C ON A.customer_id = C.entity_id WHERE C.entity_id = ${sender_id}`)
-                    // console.log(`SELECT A.logo,C.firstname, C.lastname FROM `account_edit_customer_attribute` as A INNER JOIN `customer_entity` as C ON A.customer_id = C.entity_id WHERE C.entity_id =${recipient_id}`)
                     connection.query(`SELECT A.logo,C.firstname, C.lastname FROM account_edit_customer_attribute as A INNER JOIN customer_entity as C ON A.customer_id = C.entity_id WHERE C.entity_id = ${sender_id}`, function(err, sender_data) {
-                        // console.log(sender_data)
                         message_data['sender_name'] = sender_data.length ? sender_data[0].firstname + " " + sender_data[0].lastname : "";
                         message_data['sender_img'] = sender_data.length ? sender_data[0].logo : 'default_profile_image.png';
                         connection.query(`SELECT A.logo,C.firstname, C.lastname FROM account_edit_customer_attribute as A INNER JOIN customer_entity as C ON A.customer_id = C.entity_id WHERE C.entity_id = ${recipient_id}`, function(err, recipient_data) {
