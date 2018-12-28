@@ -36,18 +36,40 @@ app.get('/', (req, res) => {
     }
 });
 
-app.get('/nodescrap', (req, res) => {
+app.get('/nodescrape', (req, res) => {
     var url = req.query.url;
     scrape(url).then(function (metadata) {
-        const desc = metadata.openGraph.description
-        const title = metadata.openGraph.title
-        const image = metadata.openGraph.image.url
-        const data = {
-            title,
-            desc,
-            image
+
+        let feedData = (title, desc, icon, image) => {
+            const data = {
+                title,
+                desc,
+                icon,
+                image
+            }
+            res.json(data)
+        };
+
+        if (metadata.openGraph) {
+            const desc = metadata.openGraph.description
+            const title = metadata.openGraph.title
+            const image = metadata.openGraph.image.url
+            const icon = metadata.general.icons[0].href
+            feedData(title, desc, icon, image)
+        } else {
+            const title = metadata.general.title
+            const icon = metadata.general.icons[0].href
+            let desc;
+            const image = null;
+            if (metadata.general.description) {
+                desc = metadata.general.description
+                feedData(title, desc, icon, image)
+            } else {
+                desc = null;
+                feedData(title, desc, icon, image)
+            }
         }
-        res.json(data)
+
     });
 })
 
