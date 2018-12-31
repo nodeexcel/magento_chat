@@ -36,11 +36,11 @@ app.get('/', (req, res) => {
     }
 });
 
-app.get('/nodescrape', (req, res) => {
+app.get('/scrape', (req, res) => {
     var url = req.query.url;
     scrape(url).then(function (metadata) {
 
-        let feedData = (title, desc, icon, image) => {
+        const setData = (title = null, desc = null, icon = null, image = null) => {
             const data = {
                 title,
                 desc,
@@ -50,27 +50,34 @@ app.get('/nodescrape', (req, res) => {
             res.json(data)
         };
 
-        if (metadata.openGraph) {
-            const desc = metadata.openGraph.description
-            const title = metadata.openGraph.title
-            const image = metadata.openGraph.image.url
-            const icon = metadata.general.icons[0].href
-            feedData(title, desc, icon, image)
-        } else {
-            const title = metadata.general.title
-            const icon = metadata.general.icons[0].href
-            let desc;
-            const image = null;
-            if (metadata.general.description) {
-                desc = metadata.general.description
-                feedData(title, desc, icon, image)
-            } else {
-                desc = null;
-                feedData(title, desc, icon, image)
+        const dataType = (element) => {
+            if (Array.isArray(element) == true) {
+                return dataType(element[0])
+            } else if (typeof (element) == 'object') {
+                const keys = Object.keys(element)
+                const key = keys[0]
+                return (element[key])
+            } else if (typeof (element) == "string") {
+                return element
             }
         }
 
+        if (metadata.openGraph) {
+            const desc = metadata.openGraph.description
+            const title = metadata.openGraph.title
+            const image = dataType(metadata.openGraph.image)
+            const icon = dataType(metadata.general.icons)
+            setData(title, desc, icon, image)
+        } else {
+            const title = metadata.general.title
+            const desc = metadata.general.description
+            const image = dataType(metadata.general.image)
+            const icon = dataType(metadata.general.icons)
+            setData(title, desc, icon, image)
+        }
+
     });
+
 })
 
 
@@ -142,3 +149,6 @@ io.on('connection', socket => {
 http.listen(process.env.PORT || 3000, () => {
     console.log('Running', process.env.PORT || 3000);
 });
+
+
+
