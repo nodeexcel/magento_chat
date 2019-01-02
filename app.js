@@ -2,6 +2,7 @@ var express = require('express');
 var app = express();
 var http = require('http').Server(app);
 var io = require('socket.io')(http);
+var scrape = require('html-metadata');
 
 // require('./libs/db-connection');
 
@@ -25,7 +26,7 @@ app.get('/', (req, res) => {
     let data = { user1: "Saurabh", user2: "prashant" }
     let channel_name = data.user1 + "_" + data.user2;
     let users = { user_1: data.user1, user_2: data.user2 }
-    let channel = rooms.filter(function(data) { return data.channel_name == channel_name })[0]
+    let channel = rooms.filter(function (data) { return data.channel_name == channel_name })[0]
     let channel_data = { channel_name: channel_name, messages: [], users: users }
     if (!channel) {
         rooms.push(channel_data)
@@ -34,6 +35,50 @@ app.get('/', (req, res) => {
         res.render('index', { data: channel })
     }
 });
+
+app.get('/scrape', (req, res) => {
+    var url = req.query.url;
+    scrape(url).then(function (metadata) {
+
+        const setData = (title = null, desc = null, icon = null, image = null) => {
+            const data = {
+                title,
+                desc,
+                icon,
+                image
+            }
+            res.json(data)
+        };
+
+        const dataType = (element) => {
+            if (Array.isArray(element) == true) {
+                return dataType(element[0])
+            } else if (typeof (element) == 'object') {
+                const keys = Object.keys(element)
+                const key = keys[0]
+                return (element[key])
+            } else if (typeof (element) == "string") {
+                return element
+            }
+        }
+
+        if (metadata.openGraph) {
+            const desc = metadata.openGraph.description
+            const title = metadata.openGraph.title
+            const image = dataType(metadata.openGraph.image)
+            const icon = dataType(metadata.general.icons)
+            setData(title, desc, icon, image)
+        } else {
+            const title = metadata.general.title
+            const desc = metadata.general.description
+            const image = dataType(metadata.general.image)
+            const icon = dataType(metadata.general.icons)
+            setData(title, desc, icon, image)
+        }
+
+    });
+
+})
 
 
 io.on('connection', socket => {
@@ -51,14 +96,14 @@ io.on('connection', socket => {
             }
         }
         let message_data = { sender_id: sender_id, recipient_id: recipient_id, identifier: identifier, message_body: data.message_body, message_time: new Date(), unread: 1 }
-        pool.getConnection(function(err, connection) {
+        pool.getConnection(function (err, connection) {
             console.log(err)
-            connection.query(`INSERT into message_chat SET ?`, message_data, function(err, data) {
-                connection.query(`select DISTINCT sender_id, identifier from message_chat where recipient_id= ?`, [recipient_id], async function(err, data) {
-                    connection.query(`SELECT A.logo,C.firstname, C.lastname FROM account_edit_customer_attribute as A INNER JOIN customer_entity as C ON A.customer_id = C.entity_id WHERE C.entity_id = ${sender_id}`, function(err, sender_data) {
+            connection.query(`INSERT into message_chat SET ?`, message_data, function (err, data) {
+                connection.query(`select DISTINCT sender_id, identifier from message_chat where recipient_id= ?`, [recipient_id], async function (err, data) {
+                    connection.query(`SELECT A.logo,C.firstname, C.lastname FROM account_edit_customer_attribute as A INNER JOIN customer_entity as C ON A.customer_id = C.entity_id WHERE C.entity_id = ${sender_id}`, function (err, sender_data) {
                         message_data['sender_name'] = sender_data.length ? sender_data[0].firstname + " " + sender_data[0].lastname : "";
                         message_data['sender_img'] = sender_data.length ? sender_data[0].logo : 'default_profile_image.png';
-                        connection.query(`SELECT A.logo,C.firstname, C.lastname FROM account_edit_customer_attribute as A INNER JOIN customer_entity as C ON A.customer_id = C.entity_id WHERE C.entity_id = ${recipient_id}`, function(err, recipient_data) {
+                        connection.query(`SELECT A.logo,C.firstname, C.lastname FROM account_edit_customer_attribute as A INNER JOIN customer_entity as C ON A.customer_id = C.entity_id WHERE C.entity_id = ${recipient_id}`, function (err, recipient_data) {
                             message_data['recipient_name'] = recipient_data.length ? recipient_data[0].firstname + " " + recipient_data[0].lastname : "";
                             message_data['recipient_img'] = recipient_data.length ? recipient_data[0].logo : 'default_profile_image.png';
                             console.log(message_data)
@@ -75,8 +120,8 @@ io.on('connection', socket => {
     socket.on('chat_list', data => {
         console.log(data, 'chat_listchat_listchat_listchat_list')
         let recipient_id = data.user_id;
-        pool.getConnection(function(err, connection) {
-            connection.query(`select DISTINCT sender_id, identifier from message_chat where recipient_id=? ORDER BY message_time DESC`, [recipient_id], function(err, data) {
+        pool.getConnection(function (err, connection) {
+            connection.query(`select DISTINCT sender_id, identifier from message_chat where recipient_id=? ORDER BY message_time DESC`, [recipient_id], function (err, data) {
                 io.sockets.emit('chat_list', data)
             })
             connection.release();
@@ -85,8 +130,8 @@ io.on('connection', socket => {
 
     socket.on('unread', data => {
         console.log(data, "=====================")
-        pool.getConnection(function(err, connection) {
-            connection.query(`UPDATE message_chat SET unread=0 WHERE sender_id = ? AND identifier=?`,[parseInt(data.sender_id), data.identifier], function(err, response) {
+        pool.getConnection(function (err, connection) {
+            connection.query(`UPDATE message_chat SET unread=0 WHERE sender_id = ? AND identifier=?`, [parseInt(data.sender_id), data.identifier], function (err, response) {
                 console.log(err, response, "00000000000000000000")
                 io.sockets.emit('unread', false)
             })
@@ -104,3 +149,6 @@ io.on('connection', socket => {
 http.listen(process.env.PORT || 3000, () => {
     console.log('Running', process.env.PORT || 3000);
 });
+
+
+
